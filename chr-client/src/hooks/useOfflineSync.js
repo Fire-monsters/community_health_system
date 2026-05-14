@@ -9,8 +9,7 @@ export function useOfflineSync() {
   useEffect(() => {
     const handleOnline = () => {
       setOnline(true);
-      // Trigger sync automatically when coming online
-      performSync();
+      performSync(); // auto sync when coming online
     };
     const handleOffline = () => setOnline(false);
     window.addEventListener('online', handleOnline);
@@ -28,6 +27,10 @@ export function useOfflineSync() {
       const result = await fullSync();
       if (result.downloadResult.conflicts && result.downloadResult.conflicts.length) {
         setConflicts(result.downloadResult.conflicts);
+      } else if (result.uploadResult.conflicts && result.uploadResult.conflicts.length) {
+        setConflicts(result.uploadResult.conflicts);
+      } else {
+        setConflicts([]);
       }
       setLastSync(new Date());
     } catch (err) {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 import { usePatients } from '../hooks/usePatients';
-import { v4 as uuidv4 } from 'uuid'; // npm install uuid
+import { getFacilityId } from '../services/db';
 
 export default function PatientForm({ existingPatient, onSuccess }) {
   const { addPatient, updatePatient } = usePatients();
@@ -12,7 +13,7 @@ export default function PatientForm({ existingPatient, onSuccess }) {
     village: '',
     phone_number: '',
     next_of_kin: '',
-    facility_id: '' // will be set from metadata
+    patient_number: `OFF-${Date.now()}`
   });
 
   const handleSubmit = async (e) => {
@@ -20,7 +21,6 @@ export default function PatientForm({ existingPatient, onSuccess }) {
     if (existingPatient) {
       await updatePatient(existingPatient.id, form);
     } else {
-      // Set facility_id from stored value
       const facilityId = await getFacilityId();
       form.facility_id = facilityId;
       await addPatient(form);
@@ -29,17 +29,19 @@ export default function PatientForm({ existingPatient, onSuccess }) {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <input value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="Full Name" required />
-      <input type="date" value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth: e.target.value})} />
-      <select value={form.sex} onChange={e => setForm({...form, sex: e.target.value})}>
+    <form onSubmit={handleSubmit} className="space-y-4 p-4 max-w-md mx-auto">
+      <h2 className="text-xl font-bold">{existingPatient ? 'Edit Patient' : 'New Patient'}</h2>
+      <input className="border p-2 w-full" value={form.full_name} onChange={e => setForm({...form, full_name: e.target.value})} placeholder="Full Name" required />
+      <input type="date" className="border p-2 w-full" value={form.date_of_birth} onChange={e => setForm({...form, date_of_birth: e.target.value})} />
+      <select className="border p-2 w-full" value={form.sex} onChange={e => setForm({...form, sex: e.target.value})}>
         <option value="female">Female</option>
         <option value="male">Male</option>
         <option value="other">Other</option>
       </select>
-      <input value={form.village} onChange={e => setForm({...form, village: e.target.value})} placeholder="Village" />
-      <input value={form.phone_number} onChange={e => setForm({...form, phone_number: e.target.value})} placeholder="Phone" />
-      <button type="submit">Save</button>
+      <input className="border p-2 w-full" value={form.village} onChange={e => setForm({...form, village: e.target.value})} placeholder="Village" />
+      <input className="border p-2 w-full" value={form.phone_number} onChange={e => setForm({...form, phone_number: e.target.value})} placeholder="Phone Number" />
+      <input className="border p-2 w-full" value={form.next_of_kin} onChange={e => setForm({...form, next_of_kin: e.target.value})} placeholder="Next of Kin" />
+      <button type="submit" className="bg-blue-600 text-white p-2 w-full rounded">Save</button>
     </form>
   );
 }

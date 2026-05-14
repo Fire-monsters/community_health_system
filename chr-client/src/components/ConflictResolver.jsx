@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import api from '../services/api';
+import { resolveConflict } from '../services/syncService';
 
 export default function ConflictResolver({ conflict, onResolved }) {
   const [resolution, setResolution] = useState('use_server');
@@ -11,38 +11,28 @@ export default function ConflictResolver({ conflict, onResolved }) {
       try {
         payload = JSON.parse(customPayload);
       } catch (e) {
-        alert('Invalid JSON for custom payload');
+        alert('Invalid JSON');
         return;
       }
     }
-    await api.post('/sync/resolve', {
-      conflict_id: conflict.conflict_id,
-      resolution,
-      custom_payload: payload
-    });
+    await resolveConflict(conflict.conflict_id, resolution, payload);
     onResolved(conflict.conflict_id);
   };
 
   return (
-    <div style={{ border: '1px solid red', margin: '10px', padding: '10px' }}>
-      <h4>Conflict in {conflict.table}</h4>
-      <div><strong>Client version:</strong> <pre>{JSON.stringify(conflict.client_version, null, 2)}</pre></div>
-      <div><strong>Server version:</strong> <pre>{JSON.stringify(conflict.server_version, null, 2)}</pre></div>
-      <select value={resolution} onChange={e => setResolution(e.target.value)}>
+    <div className="border border-red-400 p-4 m-2 rounded bg-red-50">
+      <h3 className="font-bold">Conflict in {conflict.table}</h3>
+      <div><strong>Client version:</strong> <pre className="text-xs">{JSON.stringify(conflict.client_version, null, 2)}</pre></div>
+      <div><strong>Server version:</strong> <pre className="text-xs">{JSON.stringify(conflict.server_version, null, 2)}</pre></div>
+      <select value={resolution} onChange={e => setResolution(e.target.value)} className="border p-1 mt-2">
         <option value="use_server">Use Server Version</option>
         <option value="use_client">Use Client Version</option>
         <option value="custom">Custom Merge</option>
       </select>
       {resolution === 'custom' && (
-        <textarea
-          rows={5}
-          cols={50}
-          value={customPayload}
-          onChange={e => setCustomPayload(e.target.value)}
-          placeholder='{"field": "merged value"}'
-        />
+        <textarea rows={4} className="border w-full mt-2" value={customPayload} onChange={e => setCustomPayload(e.target.value)} placeholder='{"field": "merged value"}' />
       )}
-      <button onClick={handleResolve}>Resolve</button>
+      <button onClick={handleResolve} className="bg-blue-600 text-white px-3 py-1 rounded mt-2">Resolve</button>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useContext } from 'react';
 
 export const SyncContext = createContext();
 
@@ -16,4 +16,8 @@ export function SyncProvider({ children }) {
       {children}
     </SyncContext.Provider>
   );
+}
+
+export function useSync() {
+  return useContext(SyncContext);
 }

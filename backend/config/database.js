@@ -1,7 +1,7 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
-require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const pool = new Pool({
   host: process.env.DB_HOST,
@@ -19,13 +19,13 @@ async function initDatabase() {
   try {
     const res = await client.query(`
       SELECT EXISTS (
-        SELECT FROM information_schema.tables 
+        SELECT FROM information_schema.tables
         WHERE table_name = 'facilities'
       );
     `);
     if (!res.rows[0].exists) {
       console.log('Creating database schema...');
-      const schemaSql = fs.readFileSync(path.join(__dirname, '../db/schema.sql'), 'utf8');
+      const schemaSql = fs.readFileSync(path.join(__dirname, '../schema.sql'), 'utf8');
       await client.query(schemaSql);
       console.log('Schema created successfully.');
     } else {
