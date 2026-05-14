@@ -1,3 +1,16 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer utilities {
+  .app-bg {
+    background-color: #f7faf9;
+    background-image:
+      linear-gradient(135deg, rgba(37, 99, 235, 0.08), transparent 34%),
+      linear-gradient(315deg, rgba(20, 184, 166, 0.1), transparent 30%),
+      linear-gradient(rgba(15, 23, 42, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 100% 100%, 28px 28px, 28px 28px;
+    background-attachment: fixed;
+  }
+}

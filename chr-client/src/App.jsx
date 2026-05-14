@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { SyncProvider } from './contexts/SyncContext';
 import SyncStatus from './components/SyncStatus';
@@ -7,6 +7,7 @@ import PatientsPage from './pages/PatientsPage';
 import AppointmentsPage from './pages/AppointmentsPage';
 import ReportsPage from './pages/ReportsPage';
 import SyncPage from './pages/SyncPage';
+import { CalendarDays, FileBarChart2, RefreshCw, UsersRound } from 'lucide-react';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -17,10 +18,48 @@ function ProtectedRoute({ children }) {
 }
 
 function AppLayout() {
+  const navItems = [
+    { to: '/patients', label: 'Patients', icon: UsersRound },
+    { to: '/appointments', label: 'Appointments', icon: CalendarDays },
+    { to: '/reports', label: 'Reports', icon: FileBarChart2 },
+    { to: '/sync', label: 'Sync', icon: RefreshCw }
+  ];
+
   return (
-    <div>
+    <div className="app-bg min-h-screen">
       <SyncStatus />
-      <div className="pb-16">
+      <header className="sticky top-0 z-30 px-4 py-4 backdrop-blur">
+        <div className="mx-auto mb-3 max-w-5xl text-center">
+          <p className="text-xs font-bold uppercase tracking-[0.24em] text-teal-700">
+            Community Health
+          </p>
+          <h1 className="mt-1 text-2xl font-extrabold text-slate-900 sm:text-3xl">
+            Community Health Records System
+          </h1>
+          <div className="mx-auto mt-2 h-1 w-28 rounded-full bg-gradient-to-r from-blue-600 via-teal-500 to-emerald-500" />
+        </div>
+
+        <nav className="mx-auto flex max-w-5xl gap-2 overflow-x-auto rounded-3xl border border-white/70 bg-white/90 p-2 shadow-lg shadow-slate-200/60">
+          {navItems.map(({ to, label, icon: Icon }) => (
+            <NavLink
+              key={to}
+              to={to}
+              className={({ isActive }) =>
+                [
+                  'flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-2xl px-4 py-3 text-sm font-semibold transition',
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                ].join(' ')
+              }
+            >
+              <Icon size={18} />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+      </header>
+      <div>
         <Routes>
           <Route path="/patients/*" element={<PatientsPage />} />
           <Route path="/appointments/*" element={<AppointmentsPage />} />
@@ -29,12 +68,6 @@ function AppLayout() {
           <Route path="/" element={<Navigate to="/patients" />} />
         </Routes>
       </div>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t flex justify-around p-2">
-        <a href="/patients" className="text-center text-sm">Patients</a>
-        <a href="/appointments" className="text-center text-sm">Appointments</a>
-        <a href="/reports" className="text-center text-sm">Reports</a>
-        <a href="/sync" className="text-center text-sm">Sync</a>
-      </nav>
     </div>
   );
 }

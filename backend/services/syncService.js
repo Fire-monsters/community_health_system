@@ -2,8 +2,70 @@ const { pool } = require('../config/database');
 const { conflictStrategies } = require('../config/syncConfig');
 const { detectConflict } = require('../utils/conflictDetection');
 
+const syncTables = {
+  patients: {
+    fields: ['id', 'facility_id', 'patient_number', 'full_name', 'date_of_birth', 'sex', 'village', 'phone_number', 'next_of_kin', 'is_active', 'created_at', 'updated_at', 'deleted_at'],
+    deleteMode: 'soft'
+  },
+  appointments: {
+    fields: ['id', 'patient_id', 'facility_id', 'scheduled_for', 'status', 'reminder_sent', 'notes', 'created_at', 'updated_at'],
+    deleteMode: 'hard'
+  },
+  encounters: {
+    fields: ['id', 'patient_id', 'recorded_by', 'facility_id', 'visit_date', 'visit_type', 'chief_complaint', 'diagnosis', 'treatment_given', 'notes', 'sync_status', 'created_at', 'updated_at'],
+    deleteMode: 'hard'
+  }
+};
+
+function getTableConfig(table) {
+  const config = syncTables[table];
+  if (!config) {
+    const err = new Error(`Sync is not supported for table: ${table}`);
+    err.status = 400;
+    throw err;
+  }
+  return config;
+}
+
+function pickAllowedPayload(table, payload) {
+  const config = getTableConfig(table);
+  return config.fields.reduce((cleaned, field) => {
+    if (payload[field] !== undefined) {
+      cleaned[field] = payload[field] === '' ? null : payload[field];
+    }
+    return cleaned;
+  }, {});
+}
+
+function buildInsert(table, payload) {
+  const cleaned = pickAllowedPayload(table, payload);
+  const columns = Object.keys(cleaned);
+  const values = Object.values(cleaned);
+  const placeholders = columns.map((_, idx) => `$${idx + 1}`).join(', ');
+  return {
+    text: `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`,
+    values
+  };
+}
+
+function buildUpdate(table, recordId, payload) {
+  const cleaned = pickAllowedPayload(table, payload);
+  delete cleaned.id;
+  const columns = Object.keys(cleaned);
+  const values = Object.values(cleaned);
+
+  if (columns.length === 0) return null;
+
+  const assignments = columns.map((key, idx) => `${key} = $${idx + 2}`).join(', ');
+  return {
+    text: `UPDATE ${table} SET ${assignments} WHERE id = $1`,
+    values: [recordId, ...values]
+  };
+}
+
 // Helper: get current server version of a record
 async function getServerRecord(table, recordId) {
+  getTableConfig(table);
   const res = await pool.query(`SELECT * FROM ${table} WHERE id = $1`, [recordId]);
   return res.rows[0];
 }
@@ -22,12 +84,13 @@ async function createConflict(table, recordId, localPayload, remotePayload) {
 // Apply a single change with conflict detection
 async function applyChange(change, facilityId, lastSyncToken) {
   const { table, operation, record_id, payload } = change;
+  const tableConfig = getTableConfig(table);
   const serverRecord = await getServerRecord(table, record_id);
   
   if (operation === 'INSERT') {
     if (!serverRecord) {
-      // Insert new record – ensure facility_id matches (security)
-      await pool.query(`INSERT INTO ${table} SELECT * FROM jsonb_populate_record(NULL::${table}, $1)`, [JSON.stringify(payload)]);
+      const insert = buildInsert(table, payload);
+      await pool.query(insert.text, insert.values);
       return { applied: true };
     } else {
       // Record already exists – conflict
@@ -54,14 +117,22 @@ async function applyChange(change, facilityId, lastSyncToken) {
       }
     }
     // No conflict – apply update (but restrict facility_id change if needed)
-    await pool.query(`UPDATE ${table} SET ${Object.keys(payload).map((k, i) => `${k}=$${i+2}`).join(', ')} WHERE id = $1`, [record_id, ...Object.values(payload)]);
+    const update = buildUpdate(table, record_id, payload);
+    if (update) {
+      await pool.query(update.text, update.values);
+    }
     return { applied: true };
   }
   
   if (operation === 'DELETE') {
-    // Soft delete only if server record exists and not already deleted
-    if (serverRecord && !serverRecord.deleted_at) {
+    if (!serverRecord) {
+      return { applied: true };
+    }
+
+    if (tableConfig.deleteMode === 'soft') {
       await pool.query(`UPDATE ${table} SET deleted_at = NOW() WHERE id = $1`, [record_id]);
+    } else {
+      await pool.query(`DELETE FROM ${table} WHERE id = $1`, [record_id]);
     }
     return { applied: true };
   }
@@ -78,6 +149,7 @@ async function applyChanges(facilityId, lastSyncToken, changes) {
     for (const change of changes) {
       // Security: ensure the change's facility_id matches the requesting facility
       // This requires that payload includes facility_id for relevant tables.
+      getTableConfig(change.table);
       if (change.payload && change.payload.facility_id && change.payload.facility_id !== facilityId) {
         continue; // skip – possible tampering
       }
@@ -144,4 +216,3 @@ async function getDelta(facilityId, lastSyncToken) {
 }
 
 module.exports = { applyChanges, getDelta };
-

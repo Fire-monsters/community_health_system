@@ -36,7 +36,17 @@ export default function Login() {
       <div className="absolute w-72 h-72 bg-blue-500/20 blur-3xl rounded-full top-10 left-10"></div>
       <div className="absolute w-72 h-72 bg-cyan-400/20 blur-3xl rounded-full bottom-10 right-10"></div>
 
-      <div className="relative w-full max-w-md">
+      <div className="absolute left-0 right-0 top-8 px-4 text-center">
+        <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-200">
+          Community Health
+        </p>
+        <h1 className="mt-1 text-2xl font-extrabold text-white sm:text-3xl">
+          Community Health Records System
+        </h1>
+        <div className="mx-auto mt-2 h-1 w-28 rounded-full bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-300" />
+      </div>
+
+      <div className="relative mt-28 w-full max-w-md">
 
         {/* Glassmorphism Card */}
         <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8">

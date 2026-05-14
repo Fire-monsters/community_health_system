@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getPatientReportData, getEncounterReportData, getAppointmentReportData, downloadCSV, downloadPDF } from '../services/reportService';
+import { Download, FileBarChart2, FileDown, Filter, Loader2, Search } from 'lucide-react';
 
 export default function ReportsPage() {
   const [reportType, setReportType] = useState('patients');
@@ -41,23 +42,58 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="p-4 max-w-4xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Reports</h2>
-      <div className="bg-gray-100 p-4 rounded space-y-3">
-        <select className="border p-2 w-full" value={reportType} onChange={e => setReportType(e.target.value)}>
-          <option value="patients">Patient List</option>
-          <option value="encounters">Encounter Summary</option>
-          <option value="appointments">Appointment Schedule</option>
-        </select>
-        <div className="flex space-x-2">
-          <input type="date" className="border p-2 w-1/2" placeholder="From Date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
-          <input type="date" className="border p-2 w-1/2" placeholder="To Date" value={toDate} onChange={e => setToDate(e.target.value)} />
+    <div className="min-h-screen px-4 py-10">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center gap-4">
+              <div className="rounded-2xl bg-blue-100 p-4 text-blue-600">
+                <FileBarChart2 size={24} />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-800">Reports</h1>
+                <p className="mt-1 text-gray-500">Generate patient, encounter, and appointment summaries</p>
+              </div>
+            </div>
+
+            {data.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                <button onClick={exportCSV} className="inline-flex items-center gap-2 rounded-xl bg-green-50 px-4 py-2 font-semibold text-green-700 hover:bg-green-100">
+                  <Download size={16} />
+                  CSV
+                </button>
+                <button onClick={exportPDF} className="inline-flex items-center gap-2 rounded-xl bg-red-50 px-4 py-2 font-semibold text-red-700 hover:bg-red-100">
+                  <FileDown size={16} />
+                  PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
+
+        <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
+            <Filter size={16} />
+            Report filters
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <select className="rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value={reportType} onChange={e => setReportType(e.target.value)}>
+              <option value="patients">Patient List</option>
+              <option value="encounters">Encounter Summary</option>
+              <option value="appointments">Appointment Schedule</option>
+            </select>
+            <input type="date" className="rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="From Date" value={fromDate} onChange={e => setFromDate(e.target.value)} />
+            <input type="date" className="rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="To Date" value={toDate} onChange={e => setToDate(e.target.value)} />
+          </div>
+
+          <div className="mt-4 grid gap-4 md:grid-cols-[1fr_auto]">
+            <div>
         {reportType === 'patients' && (
-          <input type="text" className="border p-2 w-full" placeholder="Village (filter)" value={village} onChange={e => setVillage(e.target.value)} />
+          <input type="text" className="w-full rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" placeholder="Village filter" value={village} onChange={e => setVillage(e.target.value)} />
         )}
         {reportType === 'encounters' && (
-          <select className="border p-2 w-full" value={visitType} onChange={e => setVisitType(e.target.value)}>
+          <select className="w-full rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value={visitType} onChange={e => setVisitType(e.target.value)}>
             <option value="all">All Visit Types</option>
             <option value="outpatient">Outpatient</option>
             <option value="inpatient">Inpatient</option>
@@ -68,7 +104,7 @@ export default function ReportsPage() {
           </select>
         )}
         {reportType === 'appointments' && (
-          <select className="border p-2 w-full" value={appointmentStatus} onChange={e => setAppointmentStatus(e.target.value)}>
+          <select className="w-full rounded-2xl border border-gray-200 bg-gray-50 p-3 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100" value={appointmentStatus} onChange={e => setAppointmentStatus(e.target.value)}>
             <option value="all">All Statuses</option>
             <option value="scheduled">Scheduled</option>
             <option value="completed">Completed</option>
@@ -76,34 +112,43 @@ export default function ReportsPage() {
             <option value="no_show">No Show</option>
           </select>
         )}
-        <button onClick={generateReport} className="bg-blue-600 text-white px-4 py-2 rounded">Generate</button>
-      </div>
-      {loading && <div className="mt-4">Loading data...</div>}
-      {data.length > 0 && (
-        <div className="mt-6">
-          <div className="flex space-x-2 mb-2">
-            <button onClick={exportCSV} className="bg-green-600 text-white px-3 py-1 rounded">Export CSV</button>
-            <button onClick={exportPDF} className="bg-red-600 text-white px-3 py-1 rounded">Export PDF</button>
+            </div>
+            <button onClick={generateReport} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 font-semibold text-white shadow-md transition hover:bg-blue-700">
+              {loading ? <Loader2 className="animate-spin" size={18} /> : <Search size={18} />}
+              Generate
+            </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="min-w-full border">
-              <thead className="bg-gray-200">
+        </div>
+
+      {loading && <div className="mt-4 rounded-3xl border border-gray-100 bg-white p-6 text-gray-500 shadow-sm">Loading data...</div>}
+      {data.length > 0 && (
+        <div className="mt-6 rounded-3xl border border-gray-100 bg-white p-2 shadow-sm">
+          <div className="overflow-x-auto rounded-2xl">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
                 <tr>
-                  {Object.keys(data[0]).map(key => <th key={key} className="border p-2 text-left">{key}</th>)}
+                  {Object.keys(data[0]).map(key => <th key={key} className="border-b border-gray-100 p-3 text-left text-xs font-bold uppercase tracking-wide text-gray-500">{key}</th>)}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-100">
                 {data.slice(0, 50).map((row, idx) => (
-                  <tr key={idx}>
-                    {Object.values(row).map((val, i) => <td key={i} className="border p-2">{val}</td>)}
+                  <tr key={idx} className="hover:bg-gray-50">
+                    {Object.values(row).map((val, i) => <td key={i} className="p-3 text-sm text-gray-700">{val}</td>)}
                   </tr>
                 ))}
               </tbody>
             </table>
-            {data.length > 50 && <div className="mt-2 text-sm">Showing first 50 of {data.length} records.</div>}
           </div>
+          {data.length > 50 && <div className="p-4 text-sm text-gray-500">Showing first 50 of {data.length} records.</div>}
         </div>
       )}
+
+      {!loading && data.length === 0 && (
+        <div className="mt-6 rounded-3xl border border-gray-100 bg-white p-10 text-center shadow-sm">
+          <p className="text-gray-500">Generate a report to preview results here.</p>
+        </div>
+      )}
+      </div>
     </div>
   );
 }
